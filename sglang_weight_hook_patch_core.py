@@ -100,8 +100,11 @@ def _patched_register_weight_hooks(self):
 
 # Save the model weight metadata to a JSON file
 def _patched_save_weight_meta(self):
-    os.makedirs("weights_metadata", exist_ok=True)
-    meta_path = os.path.join("weights_metadata", f"weights_meta_{self.gpu_id}.json")
+    import tempfile
+    metadata_dir = os.path.join(tempfile.gettempdir(), "weights_metadata")
+    os.makedirs(metadata_dir, exist_ok=True)
+    # os.makedirs("weights_metadata", exist_ok=True)
+    meta_path = os.path.join(metadata_dir, f"weights_meta_{self.gpu_id}.json")
     # meta_path = f"weights_meta_{self.gpu_id}.json"
     try:
         with open(meta_path, 'w') as f:
@@ -112,8 +115,11 @@ def _patched_save_weight_meta(self):
         return
 
 def _patched_save_total_weight_meta(self):
-    os.makedirs("weights_metadata", exist_ok=True)
-    meta_path = os.path.join("weights_metadata", f"total_weight_meta_{self.gpu_id}.json")
+    import tempfile
+    total_metadata_dir = os.path.join(tempfile.gettempdir(), "total_weights_metadata")
+    os.makedirs(total_metadata_dir, exist_ok=True)
+    # os.makedirs("weights_metadata", exist_ok=True)
+    meta_path = os.path.join(total_metadata_dir, f"total_weight_meta_{self.gpu_id}.json")
     # meta_path = f"weights_meta_{self.gpu_id}.json"
     try:
         with open(meta_path, 'w') as f:
