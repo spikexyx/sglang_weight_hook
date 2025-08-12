@@ -25,8 +25,6 @@ import json
 import time
 import torch
 from typing import List, Tuple, Union, Optional
-# import sglang.srt.model_executor.model_runner as model_runner_module
-from sglang.srt.server_args import ServerArgs, PortArgs
 
 print(f"[SGLANG_PATCH_CORE] Patch Module loaded in process: {os.getpid()}")
 # ===================================================================
@@ -423,79 +421,3 @@ def apply_model_runner_patches():
     except Exception as e:
         print(f"[SGLANG_PATCH_CORE] Failed to apply ModelRunner patches: {e}")
         return
-
-# ====================================================================
-# Patch the run_scheduler_process and run_data_parallel_controller_process functions (subprocesses)
-# NOTE: Aborted.
-def patched_run_scheduler_process(
-        server_args: ServerArgs,
-        port_args: PortArgs,
-        gpu_id: int,
-        tp_rank: int,
-        pp_rank: int,
-        dp_rank: Optional[int],
-        pipe_writer,
-    ):
-    print(f"[PATCH] Patching run_scheduler_process for GPU {gpu_id}, TP rank {tp_rank}, PP rank {pp_rank}, DP rank {dp_rank} in process {os.getpid()} ...")
-    apply_model_runner_patches()
-
-    import sglang.srt.managers.scheduler as scheduler_module
-
-    if not hasattr(scheduler_module, '_original_run_scheduler_process'):
-            scheduler_module._original_run_scheduler_process = scheduler_module.run_scheduler_process
-
-    assert hasattr(scheduler_module, '_original_run_scheduler_process')
-    scheduler_module._original_run_scheduler_process(        
-        server_args, port_args, gpu_id, tp_rank, pp_rank, dp_rank, pipe_writer
-    )
-
-def patched_run_data_parallel_controller_process(
-        server_args: ServerArgs,
-        port_args: PortArgs,
-        pipe_writer,
-    ):
-    print(f"[PATCH] Patching run_data_parallel_controller_process in process {os.getpid()} ...")
-    apply_model_runner_patches()
-
-    import sglang.srt.managers.data_parallel_controller as dp_controller_module
-
-    if not hasattr(dp_controller_module, '_original_run_data_parallel_controller_process'):
-            dp_controller_module._original_run_data_parallel_controller_process = dp_controller_module.run_data_parallel_controller_process
-
-    assert hasattr(dp_controller_module, '_original_run_data_parallel_controller_process')
-    dp_controller_module._original_run_data_parallel_controller_process(server_args, port_args, pipe_writer)
-
-# ===================================================================
-# NOTE: Aborted.
-def apply_entrypoint_patches():
-    print(f"[PATCH] Applying entrypoint patches for SGLang server in {os.getpid()} ...")
-
-    try:
-        import sglang.srt.managers.scheduler as scheduler_module
-        import sglang.srt.managers.data_parallel_controller as dp_controller_module
-
-        if not hasattr(scheduler_module, '_original_run_scheduler_process'):
-            scheduler_module._original_run_scheduler_process = scheduler_module.run_scheduler_process
-
-        scheduler_module.run_scheduler_process = patched_run_scheduler_process
-
-        if not hasattr(dp_controller_module, '_original_run_data_parallel_controller_process'):
-            dp_controller_module._original_run_data_parallel_controller_process = dp_controller_module.run_data_parallel_controller_process
-
-        dp_controller_module.run_data_parallel_controller_process = patched_run_data_parallel_controller_process
-
-        # if hasattr(scheduler_module, '_original_run_scheduler_process') and hasattr(dp_controller_module, '_original_run_data_parallel_controller_process'):
-        #     print("[PATCH] run_scheduler_process and run_data_parallel_controller_process already patched, skipping.")
-        #     print("[PATCH] run_scheduler_process already patched, skipping.")
-        #     return
-        
-        # scheduler_module._original_run_scheduler_process = scheduler_module.run_scheduler_process
-        # dp_controller_module._original_run_data_parallel_controller_process = dp_controller_module.run_data_parallel_controller_process
-
-        # Patch the functions
-        # scheduler_module.run_scheduler_process = patched_run_scheduler_process
-        # dp_controller_module.run_data_parallel_controller_process = patched_run_data_parallel_controller_process
-
-    except Exception as e:
-        print(f"[PATCH] Failed to import necessary modules for entrypoint patching: {e}")
-        raise
