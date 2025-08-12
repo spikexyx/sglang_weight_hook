@@ -11,6 +11,9 @@ python -c "import site; print(site.getsitepackages()[0])"
 
 import sys
 import os
+import atexit
+import shutil
+import tempfile
 
 # wrapper_dir = os.path.dirname(os.path.abspath(__file__))
 # python_source_dir = os.path.join(wrapper_dir, "python")
@@ -100,7 +103,7 @@ def _patched_register_weight_hooks(self):
 
 # Save the model weight metadata to a JSON file
 def _patched_save_weight_meta(self):
-    import tempfile
+    # import tempfile
     metadata_dir = os.path.join(tempfile.gettempdir(), "weights_metadata")
     os.makedirs(metadata_dir, exist_ok=True)
     # os.makedirs("weights_metadata", exist_ok=True)
@@ -115,7 +118,7 @@ def _patched_save_weight_meta(self):
         return
 
 def _patched_save_total_weight_meta(self):
-    import tempfile
+    # import tempfile
     total_metadata_dir = os.path.join(tempfile.gettempdir(), "total_weights_metadata")
     os.makedirs(total_metadata_dir, exist_ok=True)
     # os.makedirs("weights_metadata", exist_ok=True)
@@ -333,6 +336,29 @@ def _patched_update_weights_metadata(self):
     except Exception as e:
         # logger.error(f"Weight metadata update failed: {e}")
         return False
+    
+# Global cleanup function
+def _cleanup_all_metadata_files():
+    """global cleanup metadata"""
+    try:
+        temp_dir = tempfile.gettempdir()
+        
+        metadata_dir = os.path.join(temp_dir, "weights_metadata")
+        if os.path.exists(metadata_dir):
+            shutil.rmtree(metadata_dir)
+            print(f"[SGLANG_PATCH_CORE] Global cleanup: removed {metadata_dir}")
+        
+        total_metadata_dir = os.path.join(temp_dir, "total_weights_metadata")
+        if os.path.exists(total_metadata_dir):
+            shutil.rmtree(total_metadata_dir)
+            print(f"[SGLANG_PATCH_CORE] Global cleanup: removed {total_metadata_dir}")
+            
+    except Exception as e:
+        print(f"[SGLANG_PATCH_CORE] Global cleanup error: {e}")
+
+# Register cleanup function in atexit
+atexit.register(_cleanup_all_metadata_files)
+
 # ===================================================================
 # print("[PATCH] All patches have been applied.")
 
