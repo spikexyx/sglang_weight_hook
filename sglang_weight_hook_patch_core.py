@@ -201,19 +201,17 @@ def _patched_clear_old_weight_data(self):
 
     # Remove old metadata files
     try:
-        weights_dir = "weights_metadata"
-        if os.path.exists(weights_dir):
-            old_weight_file = os.path.join(weights_dir, f"weights_meta_{self.gpu_id}.json")
-            old_total_file = os.path.join(weights_dir, f"total_weight_meta_{self.gpu_id}.json")
-
-            if os.path.exists(old_weight_file):
-                os.remove(old_weight_file)
-                # logger.info(f"Removed old weight metadata file: {old_weight_file}")
-
-            if os.path.exists(old_total_file):
-                os.remove(old_total_file)
-                # logger.info(f"Removed old total weight metadata file: {old_total_file}")
-
+        temp_dir = tempfile.gettempdir()
+        metadata_dir = os.path.join(temp_dir, "weights_metadata")
+        if os.path.exists(metadata_dir):
+            shutil.rmtree(metadata_dir)
+            print(f"[SGLANG_PATCH_CORE] Global cleanup: removed {metadata_dir}")
+        
+        total_metadata_dir = os.path.join(temp_dir, "total_weights_metadata")
+        if os.path.exists(total_metadata_dir):
+            shutil.rmtree(total_metadata_dir)
+            print(f"[SGLANG_PATCH_CORE] Global cleanup: removed {total_metadata_dir}")
+            
     except Exception as e:
         # logger.warning(f"Failed to clean old metadata files: {e}")
         return
@@ -364,6 +362,7 @@ def apply_model_runner_patches():
     print(f"[SGLANG_PATCH_CORE] Applying model runner patches in process {os.getpid()}...")
     try:
         from sglang.srt.model_executor.model_runner import ModelRunner
+        _cleanup_all_metadata_files()
 
         # Register cleanup function in atexit
         atexit.register(_cleanup_all_metadata_files)
