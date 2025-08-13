@@ -354,9 +354,6 @@ def _cleanup_all_metadata_files():
     except Exception as e:
         print(f"[SGLANG_PATCH_CORE] Global cleanup error: {e}")
 
-# Register cleanup function in atexit
-atexit.register(_cleanup_all_metadata_files)
-
 # ===================================================================
 # print("[PATCH] All patches have been applied.")
 
@@ -367,6 +364,9 @@ def apply_model_runner_patches():
     print(f"[SGLANG_PATCH_CORE] Applying model runner patches in process {os.getpid()}...")
     try:
         from sglang.srt.model_executor.model_runner import ModelRunner
+
+        # Register cleanup function in atexit
+        atexit.register(_cleanup_all_metadata_files)
 
         ModelRunner._acquire_weight_lock = _patched_acquire_weight_lock
         ModelRunner._release_weight_lock = _patched_release_weight_lock
