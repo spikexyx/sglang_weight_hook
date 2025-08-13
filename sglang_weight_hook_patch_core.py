@@ -32,8 +32,10 @@ print(f"[SGLANG_PATCH_CORE] Patch Module loaded in process: {os.getpid()}")
 # ===================================================================
 def _patched_acquire_weight_lock(self, timeout=10):
     """acquire weight metadata saving file lock"""
-    os.makedirs("weights_metadata", exist_ok=True)
-    lock_file = os.path.join("weights_metadata", f"sglang_weight_saving_{self.gpu_id}.lock")
+    temp_dir = tempfile.gettempdir()
+    metadata_dir = os.path.join(temp_dir, "weights_metadata")
+    os.makedirs(metadata_dir, exist_ok=True)
+    lock_file = os.path.join(metadata_dir, f"sglang_weight_saving_{self.gpu_id}.lock")
 
     try:
         self._lock_fd = os.open(lock_file, os.O_CREAT | os.O_WRONLY)
@@ -57,11 +59,13 @@ def _patched_acquire_weight_lock(self, timeout=10):
 def _patched_release_weight_lock(self):
     """release weight metadata saving file lock"""
     if hasattr(self, '_lock_fd'):
+        temp_dir = tempfile.gettempdir()
+        metadata_dir = os.path.join(temp_dir, "weights_metadata")
         try:
             fcntl.flock(self._lock_fd, fcntl.LOCK_UN)
             os.close(self._lock_fd)
             # delete lock file
-            lock_file = os.path.join("weights_metadata", f"sglang_weight_saving_{self.gpu_id}.lock")
+            lock_file = os.path.join(metadata_dir, f"sglang_weight_saving_{self.gpu_id}.lock")
             if os.path.exists(lock_file):
                 os.remove(lock_file)
             # logger.info(f"Released weight saving lock for GPU {self.gpu_id}")
@@ -142,7 +146,6 @@ def _patched_calculate_device_weight_sizes(self, unit: str = "bytes") -> dict:
     """
     device_sizes = {}  # {device: total_size_in_bytes}
 
-    # 遍历所有 weight_infos，按 device 累加 size
     for info in self.weight_infos.values():
         device = info["device"]
         size = info["size"]
@@ -151,7 +154,6 @@ def _patched_calculate_device_weight_sizes(self, unit: str = "bytes") -> dict:
         else:
             device_sizes[device] = size
 
-    # 单位转换
     unit = unit.upper()
     if unit == "KB":
         return {device: size / 1024 for device, size in device_sizes.items()}
